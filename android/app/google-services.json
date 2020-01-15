@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "672252587573",
+    "firebase_url": "https://ronin-bachelor.firebaseio.com",
+    "project_id": "ronin-bachelor",
+    "storage_bucket": "ronin-bachelor.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:672252587573:android:824350b5997bd874bf8b7c",
+        "android_client_info": {
+          "package_name": "com.ronin.bachelor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "672252587573-5n0n9o4br9i0cjsgph2dabq1ahnnu697.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ronin.bachelor",
+            "certificate_hash": "1d3948b9b2ad374a4a776472fa5a4d29399d8409"
+          }
+        },
+        {
+          "client_id": "672252587573-58phphqfjtf5573o8g55k0denv47l04q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA39YyzmP-EFMI4ucQUO8kpNE5ypes3nmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "672252587573-58phphqfjtf5573o8g55k0denv47l04q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
