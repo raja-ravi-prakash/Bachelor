@@ -33,6 +33,14 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
   AuthState(this.parent);
 
   void _signInWithPhoneNumber() async {
+    _scaffoldKey.currentState.showSnackBar(SnackBar(
+      behavior: SnackBarBehavior.floating,
+      content: LinearProgressIndicator(
+        backgroundColor: Colors.redAccent,
+      ),
+      backgroundColor: Colors.white,
+      duration: Duration(days: 365),
+    ));
     final AuthCredential credential = PhoneAuthProvider.getCredential(
       verificationId: _verificationId,
       smsCode: _smsCode,
@@ -45,14 +53,6 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
     setState(() {
       if (user != null) {
         _message = 'Successfully signed in, uid: ' + user.uid;
-        _scaffoldKey.currentState.showSnackBar(SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: LinearProgressIndicator(
-            backgroundColor: Colors.redAccent,
-          ),
-          backgroundColor: Colors.white,
-          duration: Duration(days: 365),
-        ));
         _checkUser();
         print(_message);
         //parent.getState();

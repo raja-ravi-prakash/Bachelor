@@ -187,7 +187,8 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       backgroundColor: Colors.white,
       body: Stack(
         children: <Widget>[
-          ///Body
+
+          ///body
           Container(
             margin: EdgeInsets.only(top: 60),
             color: Colors.white,
@@ -206,6 +207,19 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
           ///Floating Action Button
           createHostActionButton(),
 
+          ///detect gestures
+          /*GestureDetector(
+            onVerticalDragEnd: (dragDetails){
+              print('forward');
+              _bottomBarController.forward();
+            },
+            onVerticalDragStart: (dragDetails){
+              print('backward');
+              _bottomBarController.reverse();
+            },
+
+            behavior: HitTestBehavior.deferToChild,
+          ),*/
         ],
       ),
     );

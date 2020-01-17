@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
+import 'package:url_launcher/url_launcher.dart';
+
 class Organization extends StatelessWidget {
 
   var _scaffoldKey;
@@ -24,19 +26,19 @@ class Organization extends StatelessWidget {
     return qn.documents;
   }
 
-  _doTheThing(context,name){
+  _doTheThing(name,number,email,template){
     Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((location) {
       if (location != null) {
         latitude = location.latitude;
         longitude = location.longitude;
-        _createAndExit(context,name);
+        _createAndExit(name,number,email,template);
       }
     });
   }
 
-  _createAndExit(context,name)async{
+  _createAndExit(name,number,email,template)async{
 
     String _phoneNumber;
 
@@ -48,8 +50,11 @@ class Organization extends StatelessWidget {
                           'latitude':latitude,
                           'longitude':longitude,
                           'Name':_value,
-                          'Phone Number':_phoneNumber,
-                          'handler':name
+                          'hostNumber':_phoneNumber,
+                          'handlerNumber':number,
+                          'handler':name,
+                          'Email':email,
+                          'template':template
                         },
                         phoneNumber: _phoneNumber,
                         path: 'users'
@@ -57,7 +62,7 @@ class Organization extends StatelessWidget {
                 });
   }
 
-  showDialog(name){
+  showDialog(name,image,mainFrame,number,email,template){
     showModalBottomSheet(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
@@ -69,7 +74,13 @@ class Organization extends StatelessWidget {
             child: Wrap(
               children: <Widget>[
                 ListTile(
-                  leading: Icon(Icons.add_photo_alternate,size: 50,color: Colors.redAccent,),
+                  onTap: (){
+                      launch(mainFrame);
+                  },
+                  leading: CircleAvatar(
+                    radius: 30,
+                    backgroundImage: NetworkImage(image),
+                  ),
                   title: Text('$name',style: TextStyle(fontWeight: FontWeight.bold),),
                   subtitle: Text('Instance'),
                 ),
@@ -96,7 +107,16 @@ class Organization extends StatelessWidget {
                   alignment: Alignment.bottomRight,
                   child: FlatButton(
                     onPressed: (){
-                      _doTheThing(parentContext, name);
+                      _scaffoldKey.currentState.showSnackBar(SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        content: LinearProgressIndicator(
+                          backgroundColor: Colors.redAccent,
+                        ),
+                        backgroundColor: Colors.white,
+                        duration: Duration(days: 365),
+                      ));
+                      Navigator.pop(contextt);
+                      _doTheThing(name,number,email,template);
                     },
                     child: Text('Ok',style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
                   ),
@@ -106,6 +126,20 @@ class Organization extends StatelessWidget {
           );
         }
     );
+  }
+
+  _launchChrome(link)async{
+
+    if(await canLaunch(link))
+      await launch(link);
+    else
+      _scaffoldKey.currentState.showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text("Cannot Open Browser",style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
+        backgroundColor: Colors.white,
+        duration: Duration(days: 365),
+      ));
+
   }
 
 
@@ -138,20 +172,25 @@ class Organization extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.all(5),
                           child: ListTile(
+                            leading: CircleAvatar(
+                              radius: 25,
+                              backgroundImage: NetworkImage(snapshot.data[index].data['image']),
+                            ),
                             trailing: IconButton(
                               onPressed: (){
-                                  showDialog(snapshot.data[index].data['Name']);
+                                  showDialog(
+                                    snapshot.data[index].data['Name'],
+                                    snapshot.data[index].data['image'],
+                                    snapshot.data[index].data['mainFrame'],
+                                    snapshot.data[index].data['Contact Number'],
+                                    snapshot.data[index].data['Email'],
+                                    snapshot.data[index].data['template']
+                                  );
                               },
                               icon: Icon(Icons.message,color: Colors.blue,),
                             ),
                             onTap: (){
-                              _scaffoldKey.currentState.showSnackBar(SnackBar(
-                                behavior: SnackBarBehavior.floating,
-                                content: Text('Email: '+snapshot.data[index].data['Email'],
-                                  style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),
-                                ),
-                                backgroundColor: Colors.white,
-                              ));
+                              _launchChrome(snapshot.data[index].data['mainFrame']);
                             },
                             title: Text(snapshot.data[index].data['Name'],
                               style: TextStyle(
