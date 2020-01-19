@@ -4,13 +4,19 @@ import 'package:bachelor/Components.dart';
 import 'package:bachelor/Screen/Home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 ///this class is the main one which decides if user logged in or not
 ///if not it routes to a login page i.e Auth()
 ///if user is logged in it routes to home page Home()
 
 
-main()=>runApp(MyApp());
+void main(){
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
+      .then((_) {
+    runApp(new MyApp());
+  });
+}
 
 class MyApp extends StatefulWidget{
   @override
