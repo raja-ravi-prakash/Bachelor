@@ -1,34 +1,36 @@
+import 'package:bachelor/Components.dart';
 import 'package:bachelor/DataBase/CreateDocument.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 class CreateHost extends StatelessWidget {
 
+  var _scaffoldKey = GlobalKey<ScaffoldState>() ;
+  var parentContext ;
   String _name;
   String _address;
-  String _phoneNumber;
   String _state;
   String _postalCode;
   String _city;
   String _street;
   double latitude,longitude;
-  String instance,_message ='Please make sure your location is as the location of the host.';
+  String instance,_message ='Do you have all the legal authority of this host?';
 
   var _details;
 
   final _finalKey = GlobalKey<FormState>();
 
-  _showDialog(sheetContext){
+  _showDialog(){
 
     //alert dialog
     showDialog(
-        context: sheetContext,
+        context: parentContext,
       builder: (context)=>AlertDialog(
-        title: Text('Note'),
-        content: Text(_message),
+        title: Text('Warning!',style: TextStyle(fontWeight: FontWeight.bold),),
+        content: Text(_message,style: TextStyle(fontSize: 15),),
         actions: <Widget>[
           FlatButton(
-            child: Text('Cancel',
+            child: Text('No',
               style: TextStyle(
                   color: Colors.redAccent,
                   fontWeight: FontWeight.bold
@@ -38,10 +40,18 @@ class CreateHost extends StatelessWidget {
             },
           ),
           FlatButton(
-            child: Text('Continue'),
+            child: Text('Yes, Continue'),
             onPressed: (){
               Navigator.of(context).pop();
-              _saveData(sheetContext);
+              _scaffoldKey.currentState.showSnackBar(SnackBar(
+                behavior: SnackBarBehavior.floating,
+                content: LinearProgressIndicator(
+                  backgroundColor: Colors.redAccent,
+                ),
+                backgroundColor: Colors.white,
+                duration: Duration(days: 365),
+              ));
+              _saveData();
             },
           ),
         ],
@@ -51,7 +61,7 @@ class CreateHost extends StatelessWidget {
 
   }
 
-  _saveData(context) async{
+  _saveData() async{
     _address = _street +",\n"+_city+",\n"+_state+", "+_postalCode;
 
     var date = DateTime.now();
@@ -66,14 +76,15 @@ class CreateHost extends StatelessWidget {
       if (location != null) {
         latitude = location.latitude;
         longitude = location.longitude;
-        _do(context);
+        _do();
       }
-      return location;
+
     });
 
   }
 
-  _do(context){
+  _do(){
+    var _phoneNumber = Components.user.phoneNumber;
     _details = {
       'Name':_name,
       'Address':_address,
@@ -86,12 +97,15 @@ class CreateHost extends StatelessWidget {
       data: _details,
       path: 'users/$_phoneNumber/hosts/',
     ).push();
-    Navigator.of(context).pop(_details);
+    Navigator.of(parentContext).pop(_details);
   }
 
   @override
   Widget build(BuildContext context) {
+
+    parentContext = context;
     return Scaffold(
+      key: _scaffoldKey,
 
       ///Form
       body: Container(
@@ -103,152 +117,128 @@ class CreateHost extends StatelessWidget {
             colors: [Colors.green,Colors.blue]
           )
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Card(
-            child: Form(
-              key: _finalKey,
-              child: Wrap(
-                children: <Widget>[
+        child: Card(
+          margin: EdgeInsets.symmetric(horizontal: 20,vertical: 30),
+          child: Form(
+            key: _finalKey,
+            child: ListView(
+              children: <Widget>[
+                AppBar(
+                  centerTitle: true,
+                  title: const Text('Create Host',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  elevation: 0,
+                  backgroundColor: Colors.transparent,
+                  iconTheme: IconThemeData(color: Colors.black),
+                ),
 
-                  //just to make it easy
-                  ListView(
-                    children: <Widget>[
-                      AppBar(
-                        centerTitle: true,
-                        title: const Text('Create Host',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        elevation: 0,
-                        backgroundColor: Colors.transparent,
-                        iconTheme: IconThemeData(color: Colors.black),
-                      ),
+                //name
+                Padding(
+                  padding: const EdgeInsets.only(left: 40,right: 40,bottom: 10),
+                  child: TextFormField(
+                    onChanged: (text)=> _name = text,
+                    validator: (text){
+                      if(text.isEmpty)
+                        return 'what should we call this thing';
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                        hintText: 'Name'
+                    ),
+                  ),
+                ),
 
-                      //name
-                      Padding(
-                        padding: const EdgeInsets.only(left: 40,right: 40,bottom: 10),
-                        child: TextFormField(
-                          onChanged: (text)=> _name = text,
-                          validator: (text){
-                            if(text.isEmpty)
-                              return 'what should we call this thing';
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                              hintText: 'Name'
-                          ),
-                        ),
-                      ),
+                //Address
+                Padding(
+                  padding: EdgeInsets.only(left: 40,right: 40,top: 20,bottom: 10),
+                  child: Text('Address:',
+                    style: TextStyle(fontWeight: FontWeight.bold,fontSize: 15,),
+                  ),
+                ),
 
-                      //phoneNUmber
-                      Padding(
-                        padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
-                        child: TextFormField(
-                          onChanged: (text) => _phoneNumber =text,
-                          validator: (text){
-                            if(text.isEmpty)
-                              return "who's responsible";
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                              hintText: 'Phone Number'
-                          ),
-                        ),
-                      ),
+                //street
+                Padding(
+                  padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
+                  child: TextFormField(
+                    onChanged: (text)=> _street = text,
+                    validator: (text){
+                      if(text.isEmpty)
+                        return 'Are you from mars!';
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                        hintText: 'Street'
+                    ),
+                  ),
+                ),
 
-                      //Address
-                      Padding(
-                        padding: EdgeInsets.only(left: 40,right: 40,top: 20,bottom: 10),
-                        child: Text('Address:',
-                          style: TextStyle(fontWeight: FontWeight.bold,fontSize: 15,),
-                        ),
-                      ),
+                //city
+                Padding(
+                  padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
+                  child: TextFormField(
+                    onChanged: (text)=> _city = text,
+                    validator: (text){
+                      if(text.isEmpty)
+                        return 'Are you from mars!';
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                        hintText: 'City'
+                    ),
+                  ),
+                ),
 
-                      //street
-                      Padding(
-                        padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
-                        child: TextFormField(
-                          onChanged: (text)=> _street = text,
-                          validator: (text){
-                            if(text.isEmpty)
-                              return 'Are you from mars!';
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                              hintText: 'Street'
-                          ),
-                        ),
-                      ),
+                //state
+                Padding(
+                  padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
+                  child: TextFormField(
+                    onChanged: (text)=> _state = text,
+                    validator: (text){
+                      if(text.isEmpty)
+                        return 'Are you from mars!';
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                        hintText: 'State'
+                    ),
+                  ),
+                ),
 
-                      //city
-                      Padding(
-                        padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
-                        child: TextFormField(
-                          onChanged: (text)=> _city = text,
-                          validator: (text){
-                            if(text.isEmpty)
-                              return 'Are you from mars!';
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                              hintText: 'City'
-                          ),
-                        ),
-                      ),
+                //Postal Code
+                Padding(
+                  padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
+                  child: TextFormField(
+                    keyboardType: TextInputType.number,
+                    onChanged: (text)=> _postalCode = text,
+                    validator: (text){
+                      if(text.isEmpty)
+                        return 'just a number!!';
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                        hintText: 'Postal Code'
+                    ),
+                  ),
+                ),
 
-                      //state
-                      Padding(
-                        padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
-                        child: TextFormField(
-                          onChanged: (text)=> _state = text,
-                          validator: (text){
-                            if(text.isEmpty)
-                              return 'Are you from mars!';
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                              hintText: 'State'
-                          ),
-                        ),
-                      ),
 
-                      //Postal Code
-                      Padding(
-                        padding: const EdgeInsets.only(left: 40,right: 40,top: 10,bottom: 10),
-                        child: TextFormField(
-                          keyboardType: TextInputType.number,
-                          onChanged: (text)=> _postalCode = text,
-                          validator: (text){
-                            if(text.isEmpty)
-                              return 'just a number!!';
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                              hintText: 'Postal Code'
-                          ),
-                        ),
-                      ),
+                SizedBox(height: 40,),
 
-                      //ok this is done
-                      Align(
-                        alignment: Alignment.center,
-                        child: FlatButton(
-                          color: Colors.deepPurple,
-                          child: Text('Done',style: TextStyle(color: Colors.white),),
-                          onPressed: (){
-                            if(_finalKey.currentState.validate())
-                              _showDialog(context);
-                          },
-                        ),
-                      ),
 
-                      Padding(padding: EdgeInsets.all(10),),
-                    ],
-                  )
-                  //title
-
-                ],
-              ),
+                //ok this is done
+                Align(
+                  alignment: Alignment.center,
+                  child: FlatButton(
+                    color: Colors.deepPurple,
+                    child: Text('Done',style: TextStyle(color: Colors.white),),
+                    onPressed: (){
+                      if(_finalKey.currentState.validate())
+                        _showDialog();
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         )

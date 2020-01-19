@@ -19,12 +19,15 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
   var _phoneNumber;
   var parentContext;
   var sheet;
-  var _smsCode;
-  var _hostName;
-  static String _message='';
+  String _smsCode;
+  String _hostName;
+  String _message='';
   var _verificationId;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _nameKey = GlobalKey<FormState>();
+  final _otpKey = GlobalKey<FormState>();
+  final _phoneNumberKey = GlobalKey<FormState>();
 
   ///animation controllers
   AnimationController _controller;
@@ -65,7 +68,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
 
 
       } else {
-        _message = 'Auth: ign in failed';
+        _message = 'Auth: sign in failed';
         log(_message);
         _scaffoldKey.currentState.hideCurrentSnackBar();
 
@@ -105,10 +108,13 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
   ///wrapping a dialog for our new user
   _newUserBaby(){
     showModalBottomSheet(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
         context: parentContext,
         builder: (sheetContext){
           return Container(
-            margin: EdgeInsets.only(left: 10,right: 10),
+            margin: EdgeInsets.symmetric(horizontal: 20),
             child: Wrap(
               children: <Widget>[
 
@@ -122,21 +128,31 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                 //text field
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TextFormField(
-                    keyboardType: TextInputType.number,
-                    autofocus: true,
-                    cursorColor: Colors.redAccent,
-                    decoration: InputDecoration(
-                      hintText: 'Your Sweet Name Please..',
+                  child: Form(
+                    key: _nameKey,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TextFormField(
+                        autovalidate: true,
+                        keyboardType: TextInputType.number,
+                        autofocus: true,
+                        cursorColor: Colors.redAccent,
+                        decoration: InputDecoration(
+                          hintText: 'Your Sweet Name Please..',
+                        ),
+                        validator: (value){
+                          if(value.isNotEmpty) {
+                            if(_hostName.length <5)
+                              return 'Name should have atleast 5 letters long.';
+                            return null;
+                          }
+                          return 'Dude! Seriously.';
+                        },
+                        onChanged: (value){
+                          _hostName = value;
+                        },
+                      ),
                     ),
-                    validator: (value){
-                      if(value.isEmpty)
-                        return 'Dude! Seriously';
-                      return null;
-                    },
-                    onChanged: (value){
-                      _hostName = value;
-                    },
                   ),
                 ),
 
@@ -147,17 +163,19 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                     onPressed: (){
 
                       //the infinity loading thing in the bottom
-                      _scaffoldKey.currentState.showSnackBar(SnackBar(
-                        behavior: SnackBarBehavior.floating,
-                        content: LinearProgressIndicator(
-                          backgroundColor: Colors.redAccent,
-                        ),
-                        backgroundColor: Colors.white,
-                        duration: Duration(days: 365),
-                      ));
+                      if (_nameKey.currentState.validate()) {
+                        _scaffoldKey.currentState.showSnackBar(SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: LinearProgressIndicator(
+                            backgroundColor: Colors.redAccent,
+                          ),
+                          backgroundColor: Colors.white,
+                          duration: Duration(days: 365),
+                        ));
+                        Navigator.pop(sheetContext);
+                        _createUser();
+                      }
 
-                      Navigator.pop(sheetContext);
-                      _createUser();
                     },
                     child: Text('Ok',style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
                   ),
@@ -265,6 +283,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
   }
 
   showDialog(){
+
     showModalBottomSheet(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
@@ -273,7 +292,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
         builder: (sheetContext){
           sheet = sheetContext;
           return Container(
-            margin: EdgeInsets.only(left: 10,right: 10),
+            margin: EdgeInsets.symmetric(horizontal: 20),
             child: Wrap(
               children: <Widget>[
 
@@ -286,21 +305,29 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                 //textField for otp
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TextFormField(
-                    keyboardType: TextInputType.number,
-                    autofocus: true,
-                    cursorColor: Colors.redAccent,
-                    decoration: InputDecoration(
-                      hintText: 'Enter Otp',
+                  child: Form(
+                    key: _otpKey,
+                    child: TextFormField(
+                      autovalidate: true,
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                      cursorColor: Colors.redAccent,
+                      decoration: InputDecoration(
+                        hintText: 'Enter Otp',
+                      ),
+                      validator: (value){
+                        if(_smsCode == null)
+                          return null;
+                        else if(value.isEmpty)
+                          return 'Just type the number.';
+                        else if(_smsCode.length != 6)
+                          return 'Length should be 6.';
+                        return null;
+                      },
+                      onChanged: (value){
+                        _smsCode = value;
+                      },
                     ),
-                    validator: (value){
-                      if(value.isEmpty)
-                        return 'we need a number!';
-                      return null;
-                    },
-                    onChanged: (value){
-                      _smsCode = value;
-                    },
                   ),
                 ),
 
@@ -309,8 +336,10 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                   alignment: Alignment.bottomRight,
                   child: FlatButton(
                     onPressed: (){
-                      Navigator.pop(sheetContext);
-                      _signInWithPhoneNumber();
+                      if (_otpKey.currentState.validate() && _smsCode.length == 6) {
+                        Navigator.pop(sheetContext);
+                        _signInWithPhoneNumber();
+                      }
                     },
                     child: Text('Ok',style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
                   ),
@@ -380,16 +409,29 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                     ///PhoneNumber Field
                     Padding(
                       padding: const EdgeInsets.only(left: 50,right: 50,bottom: 20),
-                      child: TextFormField(
-                        keyboardType: TextInputType.number,
-                        onChanged: (value){
-                          _phoneNumber = value;
-                        },
-                        decoration: InputDecoration(
-                          prefixIcon: Icon(Icons.phone,color: Colors.grey,),
-                          border: OutlineInputBorder(),
-                          hintText: 'Phone Number',
-                          contentPadding: EdgeInsets.only(left: 10,right: 10)
+                      child: Form(
+                        key: _phoneNumberKey,
+                        child: TextFormField(
+                          autovalidate: true,
+                          keyboardType: TextInputType.number,
+                          onChanged: (value){
+                            _phoneNumber = value;
+                          },
+                          validator: (value){
+                           if(_phoneNumber == null)
+                             return null;
+                           if(value.isNotEmpty)
+                             if(_phoneNumber.length ==10)
+                               return null ;
+
+                             return 'Unsupported Format.';
+                          },
+                          decoration: InputDecoration(
+                            prefixIcon: Icon(Icons.phone,color: Colors.grey,),
+                            border: OutlineInputBorder(),
+                            hintText: 'Phone Number',
+                            contentPadding: EdgeInsets.only(left: 10,right: 10)
+                          ),
                         ),
                       ),
                     ),
@@ -402,15 +444,18 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                         child: FlatButton(
                           color: Colors.redAccent,
                           onPressed: (){
-                            _scaffoldKey.currentState.showSnackBar(SnackBar(
-                              behavior: SnackBarBehavior.floating,
-                              content: LinearProgressIndicator(
-                                backgroundColor: Colors.redAccent,
-                              ),
-                              backgroundColor: Colors.white,
-                              duration: Duration(days: 365),
-                            ));
-                            _verifyPhoneNumber();
+                            if(_phoneNumberKey.currentState.validate()) {
+                              _scaffoldKey.currentState.showSnackBar(SnackBar(
+                                behavior: SnackBarBehavior.floating,
+                                content: LinearProgressIndicator(
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                                backgroundColor: Colors.white,
+                                duration: Duration(days: 365),
+                              ));
+                              _verifyPhoneNumber();
+                            }
+                            _otpKey.currentState.reset();
                           },
                           child: Text('Login',style: TextStyle(color: Colors.white),),
                         ),

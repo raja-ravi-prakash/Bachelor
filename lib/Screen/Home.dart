@@ -58,6 +58,11 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       ..addListener(() {
         upDirection = _scrollController.position.userScrollDirection == ScrollDirection.forward;
 
+        if(upDirection)
+          log('Home: scrolling Up');
+        else
+          log('Home: scrolling Down');
+
         //if this is true someone is scrolling up or someone is scrolling down
         if (upDirection != true)
           //reversing the bottomBar animation
@@ -68,12 +73,6 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
 
       });
 
-    _scrollController.addListener((){
-      if(upDirection)
-        log('Home: scrolling Up');
-      else
-        log('Home: scrolling Down');
-    });
 
     ///controllers
     //AppBar controller
@@ -130,7 +129,7 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
 
     //bottomBar animation
     bottomBar = Tween(
-        begin: Offset(0,Components.screenWidth),
+        begin: Offset(0,Components.screenHeight),
         end: Offset(0,Components.screenHeight-100)
         ).animate(
            CurvedAnimation(
@@ -164,7 +163,7 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       _hostName = snapshot['Name'];
       _hostNoOrg = snapshot['Organizations'];
       _hostNoHosts = snapshot['Hosts'];
-      log('Name: $_hostName\nHosts: $_hostNoHosts\nOrganizations: $_hostNoOrg');
+      log('Name: $_hostName, Hosts: $_hostNoHosts, Organizations: $_hostNoOrg');
     });
 
   }

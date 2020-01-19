@@ -4,7 +4,6 @@ import 'package:bachelor/Components.dart';
 import 'package:bachelor/Screen/Home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 ///this class is the main one which decides if user logged in or not
 ///if not it routes to a login page i.e Auth()
@@ -12,13 +11,22 @@ import 'package:flutter/services.dart';
 
 
 void main(){
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
-      .then((_) {
-    runApp(new MyApp());
-  });
+
+  runApp(MyApp());
+
 }
 
-class MyApp extends StatefulWidget{
+class MyApp extends StatelessWidget{
+  @override
+  Widget build(BuildContext context) {
+
+    return MaterialApp(
+      home: MaterialMyApp(),
+    );
+  }
+}
+
+class MaterialMyApp extends StatefulWidget{
   @override
   State<StatefulWidget> createState() {
 
@@ -26,7 +34,7 @@ class MyApp extends StatefulWidget{
   }
 }
 
-class MyAppState extends State<MyApp>{
+class MyAppState extends State<MaterialMyApp>{
 
   ///Just a log on how many times this method is called
   int i=0;
@@ -90,10 +98,8 @@ class MyAppState extends State<MyApp>{
     //saving screenHeight and screenWidth
     Components.screenHeight = MediaQuery.of(context).size.height;
     Components.screenWidth = MediaQuery.of(context).size.width;
-    print('screenHeight: ');
-    print(Components.screenHeight);
-    print('\nscreenWidth: ');
-    print(Components.screenWidth);
+    print('screenHeight: '+ Components.screenHeight.toString());
+    print('screenWidth: '+Components.screenWidth.toString());
 
     return MaterialApp(
       theme: ThemeData(
