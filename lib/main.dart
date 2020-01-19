@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 
 ///this class is the main one which decides if user logged in or not
 ///if not it routes to a login page i.e Auth()
-///if user is logged in it routes to home page LinkToHome()
+///if user is logged in it routes to home page Home()
 
 
 main()=>runApp(MyApp());
