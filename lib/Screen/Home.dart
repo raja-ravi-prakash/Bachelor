@@ -1,3 +1,5 @@
+import 'dart:developer';
+import 'package:bachelor/Components.dart';
 import 'package:bachelor/Screen/Options/CreateHost.dart';
 import 'package:bachelor/Screen/Options/Host.dart';
 import 'package:bachelor/Screen/Options/Organization.dart';
@@ -7,89 +9,93 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 
-class LinkToHome extends StatelessWidget{
-
-  var parent,number;
-
-  LinkToHome(this.parent,this.number);
-
-  @override
-  Widget build(BuildContext context) {
-
-    return Home(MediaQuery.of(context).size.height,MediaQuery.of(context).size.width,parent,number);
-  }
-}
 
 class Home extends StatefulWidget{
 
-  var _screenHeight,_screenWidth,parent,number;
-
-  Home(this._screenHeight,this._screenWidth,this.parent,this.number);
 
   @override
   State<StatefulWidget> createState() {
 
-    return HomeState(_screenHeight,_screenWidth,parent,number);
+    return HomeState();
   }
 }
 
 class HomeState extends State<Home> with TickerProviderStateMixin {
 
-  var parentContext,parent;
+  //class dependent variables
+  BuildContext parentContext;
+  Widget _homeState;
 
-  bool _check = false,upDirection;
+  //widget conditions
+  bool _menuState = false, upDirection;
 
-  var _homeState;
-  
-  var _hostName,_hostNumber;
+  //host details from fireBase
+  String  _hostName,_hostNumber;
   int _hostNoHosts,_hostNoOrg;
 
+  //scaffold key for snackBar
   var _scaffoldKey;
 
+  //required animations
   Animation<double> button;
   Animation<Offset> bottomBar,appBar,menuBar;
 
+  //required controllers for animations
   AnimationController _appBarController,_menuBarController,_bottomBarController;
   ScrollController _scrollController;
-  double value=0;
-  double screenHeight,screenWidth;
 
-  HomeState(this.screenHeight,this.screenWidth,this.parent,this._hostNumber);
 
   @override
   void initState() {
 
+    //initialization of elements
+    _hostNumber = Components.user.phoneNumber;
     _scaffoldKey = GlobalKey<ScaffoldState>();
 
+
+    //scrollController
     _scrollController = ScrollController()
       ..addListener(() {
         upDirection = _scrollController.position.userScrollDirection == ScrollDirection.forward;
 
+        //if this is true someone is scrolling up or someone is scrolling down
         if (upDirection != true)
+          //reversing the bottomBar animation
           _bottomBarController.reverse();
         else
+          //playing the bottomBar animation
           _bottomBarController.forward();
-
-        print(upDirection);
-
 
       });
 
+    _scrollController.addListener((){
+      if(upDirection)
+        log('Home: scrolling Up');
+      else
+        log('Home: scrolling Down');
+    });
+
+    ///controllers
+    //AppBar controller
     _appBarController = AnimationController(
       duration: Duration(milliseconds: 1000),
       vsync: this
     );
 
+    //bottomBar controller
     _bottomBarController = AnimationController(
         duration: Duration(milliseconds: 500),
         vsync: this
     );
 
+    //menuBar Controller
     _menuBarController = AnimationController(
       duration: Duration(milliseconds: 1000),
       vsync: this
     );
 
+    ///animations
+    //menuBar animation
     menuBar = Tween(
       begin: Offset(0,-220),
       end: Offset(0,50)
@@ -100,6 +106,7 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       )
     );
 
+    //appBar animation
     appBar = Tween(
       begin: Offset(0,-80),
       end: Offset(0,0)
@@ -110,6 +117,7 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       )
     );
 
+    //floating action button animation
     button = Tween(
       begin: 0.0,
       end: 1.0
@@ -120,9 +128,10 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       )
     );
 
+    //bottomBar animation
     bottomBar = Tween(
-        begin: Offset(0,screenHeight),
-        end: Offset(0,screenHeight-100)
+        begin: Offset(0,Components.screenWidth),
+        end: Offset(0,Components.screenHeight-100)
         ).animate(
            CurvedAnimation(
               parent: _bottomBarController,
@@ -130,11 +139,12 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
          )
     );
 
+    //getting host info
     pullData();
 
+      log('Home: Animations Started');
      _appBarController.forward().orCancel;
      _bottomBarController.forward().orCancel;
-
      _homeState = Host(_scrollController,_scaffoldKey);
 
     super.initState();
@@ -142,9 +152,10 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
 
+  //getting host's data from dataBase
   pullData()async{
 
-    print("pullData");
+    log('Home: pullData');
 
     await Firestore.instance
     .document('users/'+_hostNumber)
@@ -153,15 +164,16 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       _hostName = snapshot['Name'];
       _hostNoOrg = snapshot['Organizations'];
       _hostNoHosts = snapshot['Hosts'];
-      print( _hostName +" : "+_hostNumber);
+      log('Name: $_hostName\nHosts: $_hostNoHosts\nOrganizations: $_hostNoOrg');
     });
 
   }
 
   logOut()async{
 
+    log('Home: user Logged out');
     await FirebaseAuth.instance.signOut();
-    parent.getState();
+    Components.parent.getState();
 
   }
 
@@ -178,8 +190,6 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
 
     parentContext = context;
-
-    print(bottomBar.value);
 
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -205,32 +215,21 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
           bottomAppBar(),
 
           ///Floating Action Button
-          createHostActionButton(),
+          hostActionButton(),
 
-          ///detect gestures
-          /*GestureDetector(
-            onVerticalDragEnd: (dragDetails){
-              print('forward');
-              _bottomBarController.forward();
-            },
-            onVerticalDragStart: (dragDetails){
-              print('backward');
-              _bottomBarController.reverse();
-            },
-
-            behavior: HitTestBehavior.deferToChild,
-          ),*/
         ],
       ),
     );
   }
 
-  createHostActionButton(){
+  ///floating action button layer
+  hostActionButton(){
     return AnimatedBuilder(
         child: Padding(
           padding: const EdgeInsets.only(bottom :70),
           child: Align(
             alignment: Alignment.bottomCenter,
+            //floating action button
             child: FloatingActionButton(
               tooltip: 'Create Host',
               splashColor: Colors.white,
@@ -240,7 +239,7 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context)=>CreateHost(_hostNumber),
+                      builder: (context)=>CreateHost(),
                     )
                 );
               },
@@ -258,6 +257,7 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
+  ///menu bar layer
   mainMenuBar(){
     return AnimatedBuilder(
       builder: (context,child){
@@ -269,42 +269,61 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       animation: menuBar,
       child: Wrap(
         children: <Widget>[
+
+          //custom created menuBar
           Container(
             margin: EdgeInsets.only(left: 10,right: 10),
+
+            //components in menuBar
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 SizedBox(height: 30,child: Container(child: Text(''),)),
+
+                //profile
                 FlatButton.icon(
                   onPressed: (){
-                    showProfileMenu(context);
+                    log('Home: Profile');
+                    showProfileMenu();
                   },
                   label: Text('Profile'),
                   icon: Icon(Icons.account_circle),
                 ),
+
+                //Logout
                 FlatButton.icon(
                   onPressed: (){
+                    log('Home: Logout');
                     logOut();
                   },
                   icon: Icon(Icons.backspace),
                   label: Text('LogOut',style: TextStyle(fontWeight: FontWeight.bold),),
                 ),
+
+
                 Padding(
                   padding: const EdgeInsets.only(left: 30,right: 30),
                   child: Divider(color: Colors.grey,thickness: 1,),
                 ),
+
+                //FeedBack
                 FlatButton.icon(
                   icon: Icon(Icons.feedback),
-                  onPressed: (){},
+                  onPressed: (){log('Home: FeedBack');},
                   label: Text('FeedBack'),
                 ),
+
+                //Help & Support
                 FlatButton.icon(
                   icon: Icon(Icons.help),
-                  onPressed: (){},
+                  onPressed: (){log('Home: Help & Support');},
                   label: Text('Help & Support'),
                 ),
+
+
               ],
             ),
+
             decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
@@ -322,34 +341,45 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
+  ///AppBar Layer
   mainAppBar(){
 
     return AnimatedBuilder(
       animation: appBar,
+
+      //appbar within a container
       child: Container(
         height: 80,
         child: AppBar(
           centerTitle: true,
           title: Text("Hew n'Grub",style: TextStyle(color: Colors.white,fontFamily: DefaultTextStyle.of(context).style.fontFamily),),
+
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.only(bottomRight: Radius.circular(30),bottomLeft: Radius.circular(30))
           ),
+
           backgroundColor: Colors.redAccent,
+
+          //menu icon
           leading: IconButton(
             onPressed: (){
-              if(!_check) {
+              if(!_menuState) {
+                log('Home: menuBar open');
                 _menuBarController.forward();
-                _check = true;
+                _menuState = true;
               }
               else {
+                log("Home: menuBar closed");
                 _menuBarController.reverse();
-                _check = false;
+                _menuState = false;
               }
             },
             icon: Icon(Icons.menu,color: Colors.white,),
           ),
         ),
       ),
+
+
       builder: (context,child){
         return Transform.translate(
           offset: appBar.value,
@@ -359,6 +389,8 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
+
+  ///bottomAppBar layer
   bottomAppBar(){
     return AnimatedBuilder(
       builder: (context,child){
@@ -368,9 +400,12 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
         );
       },
       animation: bottomBar,
+
+      //bottomAppBar
       child: Container(
         margin: EdgeInsets.only(left: 10,right: 10),
         padding: EdgeInsets.all(5),
+
         decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.rectangle,
@@ -382,49 +417,66 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
               )
             ]
         ),
+
+        //components in bottomBar
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
+
+            //Hosts
             FlatButton(
               onPressed: (){
                 setState(() {
+                  log('Home: Hosts reloaded');
                   pullData();
                   _homeState = Host(_scrollController,_scaffoldKey);
                 });
               },
               child: Text('Hosts'),
             ),
+
+            //Organization
             FlatButton(
               onPressed: (){
                 setState(() {
                   pullData();
+                  log('Home: Organization reloaded');
                   _homeState = Organization(_scaffoldKey,parentContext);
                 });
               },
               child: Text('Organization'),
             )
+
+
           ],
         ),
+
+
       ),
     );
   }
 
- showProfileMenu(context){
+  ///Profile Menu
+ showProfileMenu(){
     showModalBottomSheet(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
         ),
-        context: context,
-        builder: (contextt){
+        context: parentContext,
+        builder: (sheetContext){
           return Container(
             margin: EdgeInsets.only(left: 10,right: 10),
             child: Wrap(
               children: <Widget>[
+
+                //title
                 ListTile(
                   title: Text('$_hostName',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 15),),
                   subtitle: Text('$_hostNumber'),
                 ),
                 Divider(),
+
+                //MyHosts
                 ListTile(
                   onTap: (){},
                   onLongPress: (){},
@@ -432,6 +484,8 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
                   leading: Icon(Icons.location_on,color: Colors.redAccent,),
                   trailing: Text('$_hostNoHosts'),
                 ),
+
+                //Organization Calls
                 ListTile(
                   onTap: (){},
                   onLongPress: (){},

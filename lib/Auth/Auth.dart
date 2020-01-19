@@ -1,3 +1,5 @@
+import 'dart:developer';
+import 'package:bachelor/Components.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -5,21 +7,18 @@ import 'package:flutter/material.dart';
 
 class Auth extends StatefulWidget {
 
-  var parent;
-
-  Auth(this.parent);
   @override
   State<StatefulWidget> createState() {
 
-    return AuthState(parent);
+    return AuthState();
   }
 }
 
 class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
 
-  var parent;
   var _phoneNumber;
   var parentContext;
+  var sheet;
   var _smsCode;
   var _hostName;
   static String _message='';
@@ -27,12 +26,14 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  ///animation controllers
   AnimationController _controller;
   Animation<double> _animation;
 
-  AuthState(this.parent);
 
   void _signInWithPhoneNumber() async {
+
+    //loading thing in bottom
     _scaffoldKey.currentState.showSnackBar(SnackBar(
       behavior: SnackBarBehavior.floating,
       content: LinearProgressIndicator(
@@ -41,41 +42,68 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
       backgroundColor: Colors.white,
       duration: Duration(days: 365),
     ));
+
+
     final AuthCredential credential = PhoneAuthProvider.getCredential(
       verificationId: _verificationId,
       smsCode: _smsCode,
     );
-    final FirebaseUser user =
-        (await _auth.signInWithCredential(credential)).user;
+
+
+    Components.user = (await _auth.signInWithCredential(credential)).user;
     final FirebaseUser currentUser = await _auth.currentUser();
-    assert(user.uid == currentUser.uid);
-    _phoneNumber = currentUser.phoneNumber;
+
+    assert(Components.user.uid == currentUser.uid);
+
     setState(() {
-      if (user != null) {
-        _message = 'Successfully signed in, uid: ' + user.uid;
+      if (Components.user != null) {
+
+        _message = 'Auth: Successfully signed in, uid: ' + Components.user.uid;
         _checkUser();
-        print(_message);
-        //parent.getState();
+
+        log(_message);
+
+
       } else {
-        _message = 'Sign in failed';
+        _message = 'Auth: ign in failed';
+        log(_message);
+        _scaffoldKey.currentState.hideCurrentSnackBar();
+
+        //signIN Failed
+        _scaffoldKey.currentState.showSnackBar(SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text("SignIn Failed",style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
+          backgroundColor: Colors.white,
+          duration: Duration(days: 365),
+        ));
+
       }
     });
   }
 
+  ///check if user exists in out database or not
   _checkUser()async{
     await Firestore.instance.
-      document('users/'+_phoneNumber)
+      document('users/'+Components.user.phoneNumber)
         .get()
         .then((snapshot){
+
+          //checking user
           _scaffoldKey.currentState.hideCurrentSnackBar();
+
           if(snapshot.exists)
-            parent.getState();
+            //old user
+            Components.parent.getState();
+
           else
-            _newUser();
+            //new user baby
+            _newUserBaby();
+
     });
   }
 
-  _newUser(){
+  ///wrapping a dialog for our new user
+  _newUserBaby(){
     showModalBottomSheet(
         context: parentContext,
         builder: (sheetContext){
@@ -83,10 +111,15 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
             margin: EdgeInsets.only(left: 10,right: 10),
             child: Wrap(
               children: <Widget>[
+
+                //title
                 ListTile(
                   title: Text('Sign UP',style: TextStyle(fontWeight: FontWeight.bold),),
                 ),
+
                 Divider(),
+
+                //text field
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextFormField(
@@ -94,11 +127,11 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                     autofocus: true,
                     cursorColor: Colors.redAccent,
                     decoration: InputDecoration(
-                      hintText: 'Your Sweet Name',
+                      hintText: 'Your Sweet Name Please..',
                     ),
                     validator: (value){
                       if(value.isEmpty)
-                        return 'Field is Empty!';
+                        return 'Dude! Seriously';
                       return null;
                     },
                     onChanged: (value){
@@ -106,11 +139,14 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                     },
                   ),
                 ),
+
+                //the mighty OK button
                 Align(
                   alignment: Alignment.bottomRight,
                   child: FlatButton(
                     onPressed: (){
-                      Navigator.pop(sheetContext);
+
+                      //the infinity loading thing in the bottom
                       _scaffoldKey.currentState.showSnackBar(SnackBar(
                         behavior: SnackBarBehavior.floating,
                         content: LinearProgressIndicator(
@@ -119,11 +155,15 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                         backgroundColor: Colors.white,
                         duration: Duration(days: 365),
                       ));
+
+                      Navigator.pop(sheetContext);
                       _createUser();
                     },
                     child: Text('Ok',style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
                   ),
                 )
+
+
               ],
             ),
           );
@@ -131,18 +171,22 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
     );
   }
 
+  //creating a new bitch
   _createUser()async{
     await Firestore.instance
-        .document('users/'+_phoneNumber)
+        .document('users/'+Components.user.phoneNumber)
         .setData({
           'Hosts':0,
           'Name':_hostName,
           'Organizations':0
     }).then((value){
       _scaffoldKey.currentState.hideCurrentSnackBar();
-      parent.getState();
+
+      //thing thing is over now let's go
+      Components.parent.getState();
     });
   }
+
 
   void _verifyPhoneNumber() async {
 
@@ -150,11 +194,21 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
       _message = '';
     });
     final PhoneVerificationCompleted verificationCompleted =
-        (AuthCredential phoneAuthCredential) {
-      _auth.signInWithCredential(phoneAuthCredential);
+        (AuthCredential phoneAuthCredential) async {
+
+      Components.user = (await _auth.signInWithCredential(phoneAuthCredential)).user;
       setState(() {
-        _message = 'Received phone auth credential: $phoneAuthCredential';
-        print("phone verification "+_message);
+
+        //autoVerification thing
+        _message = 'Auth: Received phone auth credential: $phoneAuthCredential';
+        log("phone verification "+_message);
+        _checkUser();
+
+        if(Components.user != null) {
+          Navigator.of(context).pop();
+          Components.parent.getState();
+        }
+
       });
     };
 
@@ -162,16 +216,36 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
         (AuthException authException) {
       setState(() {
         _message =
-        'Phone number verification failed. Code: ${authException.code}. Message: ${authException.message}';
+        'Auth: Phone number verification failed. Code: ${authException.code}. Message: ${authException.message}';
+        log(_message);
+
+        _scaffoldKey.currentState.showSnackBar(SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text("SignIn Failed",style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
+          backgroundColor: Colors.white,
+          duration: Duration(seconds: 5),
+
+          //never giveUp Try Again Button
+          action: SnackBarAction(
+            label: 'Try Again',
+            onPressed: (){
+              Components.parent.getState();
+            },
+          ),
+
+        ));
       });
     };
 
     final PhoneCodeSent codeSent =
         (String verificationId, [int forceResendingToken]) async {
+
       setState(() {
         _scaffoldKey.currentState.hideCurrentSnackBar();
       });
-      print('code sent');
+
+      //code is on it's way
+      log('Auth: code sent');
       showDialog();
       _verificationId = verificationId;
     };
@@ -196,15 +270,20 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
           borderRadius: BorderRadius.circular(10.0),
         ),
         context: parentContext,
-        builder: (contextt){
+        builder: (sheetContext){
+          sheet = sheetContext;
           return Container(
             margin: EdgeInsets.only(left: 10,right: 10),
             child: Wrap(
               children: <Widget>[
+
+                //title
                 ListTile(
                   title: Text('Enter Otp',style: TextStyle(fontWeight: FontWeight.bold),),
                 ),
                 Divider(),
+
+                //textField for otp
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextFormField(
@@ -216,7 +295,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                     ),
                     validator: (value){
                       if(value.isEmpty)
-                        return 'Field is Empty!';
+                        return 'we need a number!';
                       return null;
                     },
                     onChanged: (value){
@@ -224,16 +303,19 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                     },
                   ),
                 ),
+
+                //the mighty OK button
                 Align(
                   alignment: Alignment.bottomRight,
                   child: FlatButton(
                     onPressed: (){
-                      Navigator.pop(contextt);
+                      Navigator.pop(sheetContext);
                       _signInWithPhoneNumber();
                     },
                     child: Text('Ok',style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
                   ),
                 )
+
               ],
             ),
           );
@@ -244,11 +326,13 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
   @override
   void initState() {
 
+    //signIn card animation Controller
     _controller = AnimationController(
       vsync: this,
       duration: Duration(seconds: 2)
     );
 
+    //the card animation property
     _animation = Tween(
 
       begin: 0.0,
@@ -259,6 +343,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
       curve: Curves.bounceOut
     ));
 
+    log('Auth: animation start');
     _controller.forward();
 
     super.initState();
@@ -270,12 +355,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
 
     parentContext = context;
 
-    return /*MaterialApp(
-      theme: ThemeData(
-        primaryColor: Colors.redAccent,
-        accentColor: Colors.white
-      ),
-      home:*/ Scaffold(
+    return Scaffold(
         key: _scaffoldKey,
         backgroundColor: Colors.redAccent,
         body: Center(
@@ -336,10 +416,12 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                         ),
                       ),
                     ),
+
+
                   ],
                 ),
               ),
-              builder: (contextt,child){
+              builder: (animatedContext,child){
                 print(_animation.value);
                 return Transform.scale(
                     scale: _animation.value,

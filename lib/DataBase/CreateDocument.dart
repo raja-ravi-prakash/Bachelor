@@ -1,3 +1,5 @@
+import 'dart:developer';
+import 'package:bachelor/Components.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
@@ -6,13 +8,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CreateDocument {
   Map<String,dynamic> data;
-  String path,phoneNumber;
+  String path;
   final dataBase= Firestore.instance;
 
   CreateDocument({
     @required this.data,
     @required this.path,
-    this.phoneNumber
     }):assert(data!=null),
       assert(path!=null);
 
@@ -25,32 +26,24 @@ class CreateDocument {
      instance+=date.minute.toString()+"_"+date.second.toString();
      try {
        await dataBase
-       .collection('users')
-       .document(phoneNumber)
-       .collection('hosts')
-           .document(instance)
+           .document(path+instance)
            .setData(data)
            .then((value){
-              print('Data Sended');
+              log('Data Sended');
               _updateHostData();
        });
-       await dataBase
-           .collection('hosts')
-           .document(instance)
-           .setData(data)
-           .then((value){
-         print('Data Sended');
-       });
+
      }catch(e){
-       print('\npush data failed : ');
-       print(e.toString());
+       log('\npush data failed : ');
+       log(e.toString());
      }
   }
 
   _updateHostData()async{
+
     try {
       await dataBase
-              .document('users/'+phoneNumber)
+              .document('users/'+ Components.user.phoneNumber)
               .get()
               .then((snapshot){
                var dataInstant = {
@@ -58,28 +51,49 @@ class CreateDocument {
                  'Organizations':snapshot['Organizations'],
                  'Name':snapshot['Name']
                };
-                _setHostData(dataInstant);
+                _setData(dataInstant);
           });
     } catch (e) {
-      print('\nupdate Host Data Failed : ');
-      print(e.toString());
+      log('\nupdate Host Data Failed : ');
+      log(e.toString());
     }
+
   }
   
-  _setHostData(dataInstant)async{
+  _setData(dataInstant)async{
      
      try {
        await dataBase
-                .document('users/'+phoneNumber)
+                .document('users/'+Components.user.phoneNumber)
                 .updateData(dataInstant);
      } catch (e) {
-       print('\nset Host Data failed : ');
-       print(e.toString());
+       log('\nset Data failed : ');
+       log(e.toString());
      }
      
   }
 
+  _updateOrganizationData()async{
+    try {
+      await dataBase
+          .document('users/'+ Components.user.phoneNumber)
+          .get()
+          .then((snapshot){
+        var dataInstant = {
+          'Hosts':snapshot['Hosts'],
+          'Organizations':snapshot['Organizations']+1,
+          'Name':snapshot['Name']
+        };
+        _setData(dataInstant);
+      });
+    } catch (e) {
+      log('\nupdate Organization Data Failed : ');
+      log(e.toString());
+    }
+  }
+
   _thirdPartyServer(key)async{
+
      var url = data['template'];
      String hostNumber = '%2B'+data['hostNumber'].substring(0);
      String handlerNumber = '%2B'+data['handlerNumber'].substring(0);
@@ -93,20 +107,27 @@ class CreateDocument {
 
      Response response = await get(url);
 
-     if(response.statusCode == 200)
+     if(response.statusCode == 200) {
+       log('message sent');
        key.currentState.showSnackBar(SnackBar(
          behavior: SnackBarBehavior.floating,
-         content: Text('Message Sent Successfully',style: TextStyle(color: Colors.green,fontWeight: FontWeight.bold)),
+         content: Text('Message Sent Successfully', style: TextStyle(
+             color: Colors.green, fontWeight: FontWeight.bold)),
          backgroundColor: Colors.white,
          duration: Duration(seconds: 2),
        ));
-     else
+       _updateOrganizationData();
+     }
+     else {
+       log('message sent failed!');
        key.currentState.showSnackBar(SnackBar(
          behavior: SnackBarBehavior.floating,
-         content: Text('Message Sent Failed',style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold)),
+         content: Text('Message Sent Failed', style: TextStyle(
+             color: Colors.redAccent, fontWeight: FontWeight.bold)),
          backgroundColor: Colors.white,
          duration: Duration(seconds: 2),
        ));
+     }
 
   }
 
@@ -119,10 +140,7 @@ class CreateDocument {
 
     try {
       await dataBase
-          .collection('users')
-          .document(phoneNumber)
-          .collection('organization')
-          .document(phoneNumber + "**" + instance)
+          .document(path+Components.user.phoneNumber + "**" + instance)
           .setData(data).then((value) {
         print('Data Sended');
         key.currentState.hideCurrentSnackBar();
@@ -135,8 +153,8 @@ class CreateDocument {
         ));
       });
     }catch(e){
-      print('\nrequest failed : ');
-      print(e.toString());
+      log('\nrequest failed : ');
+      log(e.toString());
     }
     
   }

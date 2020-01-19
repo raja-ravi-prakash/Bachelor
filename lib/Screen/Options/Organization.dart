@@ -1,10 +1,10 @@
+import 'dart:developer';
+import 'package:bachelor/Components.dart';
 import 'package:bachelor/DataBase/CreateDocument.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-
 import 'package:url_launcher/url_launcher.dart';
 
 class Organization extends StatelessWidget {
@@ -18,48 +18,54 @@ class Organization extends StatelessWidget {
 
   Future getData() async {
 
-    var firestore = Firestore.instance;
+    //getting Organization data from FireStore
+    var fireStore = Firestore.instance;
 
-    QuerySnapshot qn = await firestore.collection('organization')
+    QuerySnapshot qn = await fireStore.collection('organization')
         .getDocuments();
 
     return qn.documents;
   }
 
   _doTheThing(name,number,email,template){
+
+    //an intent, calling help!! (FireBase DocumentReference)
     Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((location) {
-      if (location != null) {
-        latitude = location.latitude;
-        longitude = location.longitude;
-        _createAndExit(name,number,email,template);
-      }
+
+            if (location != null) {
+
+                latitude = location.latitude;
+                longitude = location.longitude;
+                _createAndExit(name,number,email,template);
+
+            }
+
+            else
+              log("Organization: i don't know what to do now");
     });
+
+
   }
 
   _createAndExit(name,number,email,template)async{
 
-    String _phoneNumber;
+    var phoneNumber = Components.user.phoneNumber;
+    CreateDocument(
+        data: {
+          'latitude':latitude,
+          'longitude':longitude,
+          'Name':_value,
+          'hostNumber':phoneNumber,
+          'handlerNumber':number,
+          'handler':name,
+          'Email':email,
+          'template':template
+        },
+        path: 'users/$phoneNumber/organization/'
+    ).request(_scaffoldKey);
 
-    await FirebaseAuth.instance.currentUser()
-                  .then((user){
-                    _phoneNumber = user.phoneNumber;
-                    CreateDocument(
-                        data: {
-                          'latitude':latitude,
-                          'longitude':longitude,
-                          'Name':_value,
-                          'hostNumber':_phoneNumber,
-                          'handlerNumber':number,
-                          'handler':name,
-                          'Email':email,
-                          'template':template
-                        },
-                        phoneNumber: _phoneNumber,
-                        path: 'users'
-                    ).request(_scaffoldKey);
-                });
   }
 
   showDialog(name,image,mainFrame,number,email,template){
@@ -68,11 +74,13 @@ class Organization extends StatelessWidget {
           borderRadius: BorderRadius.circular(10.0),
         ),
         context: parentContext,
-        builder: (contextt){
+        builder: (sheetContext){
           return Container(
             margin: EdgeInsets.only(left: 10,right: 10),
             child: Wrap(
               children: <Widget>[
+
+                //title
                 ListTile(
                   onTap: (){
                       launch(mainFrame);
@@ -84,7 +92,10 @@ class Organization extends StatelessWidget {
                   title: Text('$name',style: TextStyle(fontWeight: FontWeight.bold),),
                   subtitle: Text('Instance'),
                 ),
+
                 Divider(),
+
+                //name
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextFormField(
@@ -95,7 +106,7 @@ class Organization extends StatelessWidget {
                     ),
                     validator: (value){
                       if(value.isEmpty)
-                        return 'Field is Empty!';
+                        return 'what sould we call this thing!';
                       return null;
                     },
                     onChanged: (value){
@@ -103,6 +114,8 @@ class Organization extends StatelessWidget {
                     },
                   ),
                 ),
+
+                //the mighty ok button
                 Align(
                   alignment: Alignment.bottomRight,
                   child: FlatButton(
@@ -115,12 +128,13 @@ class Organization extends StatelessWidget {
                         backgroundColor: Colors.white,
                         duration: Duration(days: 365),
                       ));
-                      Navigator.pop(contextt);
+                      Navigator.pop(sheetContext);
                       _doTheThing(name,number,email,template);
                     },
                     child: Text('Ok',style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.bold),),
                   ),
                 )
+
               ],
             ),
           );
@@ -148,8 +162,12 @@ class Organization extends StatelessWidget {
 
     return Container(
         padding: EdgeInsets.all(5),
+
+        //we are getting things from internet so a future builder
         child: FutureBuilder(
             future: getData(),
+
+            //iterating through document snapshots (like a for loop)
             builder: (_ , snapshot){
 
               if(snapshot.connectionState == ConnectionState.waiting) {
@@ -163,6 +181,7 @@ class Organization extends StatelessWidget {
                 );
               }else {
 
+                //building a list view items through iteration
                 return ListView.builder(
                     itemCount: snapshot.data.length,
                     itemBuilder: (_,index){
@@ -171,11 +190,17 @@ class Organization extends StatelessWidget {
                         elevation: 2,
                         child: Padding(
                           padding: const EdgeInsets.all(5),
+
+                          //content
                           child: ListTile(
+
+                            //image
                             leading: CircleAvatar(
                               radius: 25,
                               backgroundImage: NetworkImage(snapshot.data[index].data['image']),
                             ),
+
+                            //intent action
                             trailing: IconButton(
                               onPressed: (){
                                   showDialog(
@@ -189,15 +214,21 @@ class Organization extends StatelessWidget {
                               },
                               icon: Icon(Icons.message,color: Colors.blue,),
                             ),
+
+                            //details of the intent
                             onTap: (){
                               _launchChrome(snapshot.data[index].data['mainFrame']);
                             },
+
+                            //title
                             title: Text(snapshot.data[index].data['Name'],
                               style: TextStyle(
                                   color:Colors.black ,
                                   fontSize: 20
                               ),
                             ),
+
+                            //number
                             subtitle: Text(
                               'Contact Number: '+snapshot.data[index].data['Contact Number'],
                               style: TextStyle(
