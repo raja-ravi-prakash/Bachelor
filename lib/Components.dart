@@ -14,4 +14,5 @@ class Components {
 
   //parent object
   static MyAppState parent;
+
 }

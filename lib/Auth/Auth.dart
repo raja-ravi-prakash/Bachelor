@@ -3,6 +3,7 @@ import 'package:bachelor/Components.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 
 class Auth extends StatefulWidget {
@@ -105,16 +106,24 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
     });
   }
 
+  _closeKeyBoard()=> FocusScope.of(context).requestFocus(FocusNode());
+
   ///wrapping a dialog for our new user
   _newUserBaby(){
     showModalBottomSheet(
+      isDismissible: false,
+      isScrollControlled: true,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
         ),
         context: parentContext,
         builder: (sheetContext){
           return Container(
-            margin: EdgeInsets.symmetric(horizontal: 20),
+            margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20
+            ),
             child: Wrap(
               children: <Widget>[
 
@@ -127,20 +136,21 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
 
                 //text field
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: EdgeInsets.all(10),
                   child: Form(
                     key: _nameKey,
                     child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: EdgeInsets.all(8.0),
                       child: TextFormField(
                         autovalidate: true,
-                        keyboardType: TextInputType.number,
-                        autofocus: true,
+                        keyboardType: TextInputType.text,
                         cursorColor: Colors.redAccent,
                         decoration: InputDecoration(
                           hintText: 'Your Sweet Name Please..',
                         ),
                         validator: (value){
+                          if(_hostName == null)
+                            return null;
                           if(value.isNotEmpty) {
                             if(_hostName.length <5)
                               return 'Name should have atleast 5 letters long.';
@@ -164,6 +174,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
 
                       //the infinity loading thing in the bottom
                       if (_nameKey.currentState.validate()) {
+                        _closeKeyBoard();
                         _scaffoldKey.currentState.showSnackBar(SnackBar(
                           behavior: SnackBarBehavior.floating,
                           content: LinearProgressIndicator(
@@ -218,15 +229,10 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
       setState(() {
 
         //autoVerification thing
+        Navigator.of(sheet).pop();
         _message = 'Auth: Received phone auth credential: $phoneAuthCredential';
         log("phone verification "+_message);
         _checkUser();
-
-        if(Components.user != null) {
-          Navigator.of(context).pop();
-          Components.parent.getState();
-        }
-
       });
     };
 
@@ -285,6 +291,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
   showDialog(){
 
     showModalBottomSheet(
+      isDismissible: false,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
         ),
@@ -292,7 +299,11 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
         builder: (sheetContext){
           sheet = sheetContext;
           return Container(
-            margin: EdgeInsets.symmetric(horizontal: 20),
+            margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+            ),
             child: Wrap(
               children: <Widget>[
 
@@ -310,7 +321,6 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                     child: TextFormField(
                       autovalidate: true,
                       keyboardType: TextInputType.number,
-                      autofocus: true,
                       cursorColor: Colors.redAccent,
                       decoration: InputDecoration(
                         hintText: 'Enter Otp',
@@ -337,6 +347,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                   child: FlatButton(
                     onPressed: (){
                       if (_otpKey.currentState.validate() && _smsCode.length == 6) {
+                        _closeKeyBoard();
                         Navigator.pop(sheetContext);
                         _signInWithPhoneNumber();
                       }
@@ -412,8 +423,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                       child: Form(
                         key: _phoneNumberKey,
                         child: TextFormField(
-                          autovalidate: true,
-                          keyboardType: TextInputType.number,
+                          keyboardType: TextInputType.phone,
                           onChanged: (value){
                             _phoneNumber = value;
                           },
@@ -445,6 +455,7 @@ class AuthState extends State<Auth> with SingleTickerProviderStateMixin{
                           color: Colors.redAccent,
                           onPressed: (){
                             if(_phoneNumberKey.currentState.validate()) {
+                              _closeKeyBoard();
                               _scaffoldKey.currentState.showSnackBar(SnackBar(
                                 behavior: SnackBarBehavior.floating,
                                 content: LinearProgressIndicator(

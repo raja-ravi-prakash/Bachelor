@@ -1,31 +1,108 @@
+import 'dart:developer';
+import 'package:bachelor/Components.dart';
 import 'package:bachelor/Controls/Maps.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
-class Host extends StatefulWidget {
-  var _scrollController, _scaffoldKey;
+class MyHosts extends StatefulWidget {
+  var _scrollController, _scaffoldKey,parentContext;
 
-  Host(this._scrollController, this._scaffoldKey);
+  MyHosts(this._scrollController, this._scaffoldKey, this.parentContext);
 
   @override
-  HostData createState() => HostData(_scrollController, _scaffoldKey);
+  MyHostsData createState() => MyHostsData(_scrollController, _scaffoldKey,parentContext);
 }
 
-class HostData extends State<Host> {
+class MyHostsData extends State<MyHosts> {
   ScrollController _controller;
-
   GlobalKey<ScaffoldState> _scaffoldKey;
+  var parentContext ;
 
-  HostData(this._controller, this._scaffoldKey);
+  MyHostsData(this._controller, this._scaffoldKey,this.parentContext);
+  
+  _deleteHost(String id)async{
+
+    var referenceId = 'users/'+Components.user.phoneNumber+'/hosts/'+id;
+
+    await Firestore.instance
+        .document(referenceId)
+        .updateData({'enabled':false})
+        .then((value){
+          setState(() {
+            _scaffoldKey.currentState.showSnackBar(SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('Deleted!',
+                  style: TextStyle(
+                      color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              backgroundColor: Colors.white,
+              duration: Duration(seconds: 1),
+            ));
+            log('Document: $id deleted');
+          });
+    });
+  }
+
+  _hostAction(data){
+    showModalBottomSheet(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        context: parentContext,
+        builder: (sheetContext){
+          return Container(
+            margin: EdgeInsets.only(left: 10,right: 10),
+            child: Wrap(
+              children: <Widget>[
+
+                //title
+                ListTile(
+                  title: Text(data['Name'],style: TextStyle(fontWeight: FontWeight.bold,fontSize: 15),),
+                  subtitle: Text(data['Instance']),
+                  trailing: InkWell(
+                    child: Icon(Icons.delete,color: Colors.redAccent,),
+                    onTap: (){
+                      _deleteHost(data['Instance']);
+                      Navigator.pop(context);
+                    },
+                  )
+                ),
+                Divider(),
+
+                //MyHosts
+                ListTile(
+                  onTap: (){},
+                  onLongPress: (){},
+                  title: Text('Latitude',style: TextStyle(fontWeight: FontWeight.bold,color: Colors.redAccent),),
+                  leading: Icon(Icons.location_on,color: Colors.redAccent,),
+                  trailing: Text(data['latitude'].toString()),
+                ),
+
+                //Organization Calls
+                ListTile(
+                  onTap: (){},
+                  onLongPress: (){},
+                  title: Text('Longitude',style: TextStyle(fontWeight: FontWeight.bold,color: Colors.redAccent),),
+                  leading: Icon(Icons.poll,color: Colors.redAccent,),
+                  trailing: Text(data['longitude'].toString()),
+                ),
+
+              ],
+            ),
+          );
+        }
+    );
+  }
 
   Future getData() async {
     //getting Hosts data from FireBase
     var fireStore = Firestore.instance;
 
     QuerySnapshot qn = await fireStore
+        .collection('users')
+        .document(Components.user.phoneNumber)
         .collection('hosts')
-        .orderBy('Name', descending: false)
+        .orderBy('enabled', descending: true)
         .getDocuments();
 
     return qn.documents;
@@ -55,7 +132,7 @@ class HostData extends State<Host> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        Text('Hosts',style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
+                        Text('My Hosts',style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
                         Padding(padding: EdgeInsets.only(bottom :10,left: 150,right: 150)),
                         CircularProgressIndicator(
                           backgroundColor: Colors.redAccent,
@@ -90,22 +167,23 @@ class HostData extends State<Host> {
                   //iterating through document snapshots (like a for loop)
                   itemBuilder: (_, index) {
                     return Card(
-                      color: Colors.white,
-                      elevation: 2,
+                      color: snapshot.data[index].data['enabled'] ? Colors.white:Colors.grey[200],
+                      elevation: snapshot.data[index].data['enabled'] ? 2 : 0,
                       child: Padding(
                         padding: const EdgeInsets.all(5),
                         child: ListTile(
+                          enabled: snapshot.data[index].data['enabled'],
                           //action
                           trailing: IconButton(
                             icon: Icon(
                               Icons.map,
-                              color: Colors.blue,
+                              color: snapshot.data[index].data['enabled'] ?Colors.blue : Colors.grey,
                             ),
                             onPressed: () {
                               double latitude =
-                                  snapshot.data[index].data['latitude'];
+                              snapshot.data[index].data['latitude'];
                               double longitude =
-                                  snapshot.data[index].data['longitude'];
+                              snapshot.data[index].data['longitude'];
 
                               //on action event opens maps
                               if (snapshot.data[index].data['Name'] !=
@@ -126,19 +204,9 @@ class HostData extends State<Host> {
 
                           //onTap show's host's details
                           onTap: () {
-                            if (snapshot.data[index].data['Name'] !=
-                                '{End Of Host}')
-                              _scaffoldKey.currentState.showSnackBar(SnackBar(
-                                behavior: SnackBarBehavior.floating,
-                                backgroundColor: Colors.white,
-                                content: Text(
-                                  snapshot.data[index].data['Address'],
-                                  style: TextStyle(
-                                      color: Colors.redAccent,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                duration: Duration(milliseconds: 1000),
-                              ));
+                            if (snapshot.data[index].data['Name'] != '{End Of Host}')
+                              _hostAction(snapshot.data[index]);
+
                           },
 
                           //title of the host

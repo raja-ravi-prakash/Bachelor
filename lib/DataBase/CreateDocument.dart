@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class CreateDocument {
   Map<String, dynamic> data;
   String path;
+  String instance;
   final dataBase = Firestore.instance;
 
   CreateDocument({
@@ -18,12 +19,8 @@ class CreateDocument {
         assert(path != null);
 
   void push() async {
-    var date = DateTime.now();
-    String instance = date.year.toString() + "_" + date.month.toString() + "_";
-    instance += date.day.toString() + "_" + date.hour.toString() + "_";
-    instance += date.minute.toString() + "_" + date.second.toString();
     try {
-      await dataBase.document(path + instance).setData(data).then((value) {
+      await dataBase.document(path + data['Instance']).setData(data).then((value) {
         log('Data Sended');
         _updateHostData();
       });
@@ -82,6 +79,30 @@ class CreateDocument {
     }
   }
 
+  _writeData(key)async{
+    try {
+      await dataBase
+          .document(path + Components.user.phoneNumber + "**" + instance)
+          .setData(data)
+          .then((value) {
+        print('Data Sended');
+        key.currentState.hideCurrentSnackBar();
+        _thirdPartyServer(key);
+        key.currentState.showSnackBar(SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Data Written Successfully',
+              style: TextStyle(
+                  color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.white,
+          duration: Duration(seconds: 1),
+        ));
+      });
+    } catch (e) {
+      log('\nrequest failed : ');
+      log(e.toString());
+    }
+  }
+
   _thirdPartyServer(key) async {
     var url = data['template'];
     String hostNumber = '%2B' + data['hostNumber'].substring(0);
@@ -106,6 +127,7 @@ class CreateDocument {
         duration: Duration(seconds: 2),
       ));
       _updateOrganizationData();
+      _writeData(key);
     } else {
       log('message sent failed!');
       key.currentState.showSnackBar(SnackBar(
@@ -121,30 +143,11 @@ class CreateDocument {
 
   void request(GlobalKey<ScaffoldState> key) async {
     var date = DateTime.now();
-    String instance = date.year.toString() + "_" + date.month.toString() + "_";
+    instance = date.year.toString() + "_" + date.month.toString() + "_";
     instance += date.day.toString() + "_" + date.hour.toString() + "_";
     instance += date.minute.toString() + "_" + date.second.toString();
 
-    try {
-      await dataBase
-          .document(path + Components.user.phoneNumber + "**" + instance)
-          .setData(data)
-          .then((value) {
-        print('Data Sended');
-        key.currentState.hideCurrentSnackBar();
-        _thirdPartyServer(key);
-        key.currentState.showSnackBar(SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text('Data Written Successfully',
-              style: TextStyle(
-                  color: Colors.redAccent, fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.white,
-          duration: Duration(seconds: 1),
-        ));
-      });
-    } catch (e) {
-      log('\nrequest failed : ');
-      log(e.toString());
-    }
+    _thirdPartyServer(key);
+
   }
 }

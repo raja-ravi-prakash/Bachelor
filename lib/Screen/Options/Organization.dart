@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:bachelor/Components.dart';
 import 'package:bachelor/DataBase/CreateDocument.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -56,13 +57,14 @@ class Organization extends StatelessWidget {
 
   showDialog(name, image, mainFrame, number, email, template) {
     showModalBottomSheet(
+        isScrollControlled: true,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
         ),
         context: parentContext,
         builder: (sheetContext) {
           return Container(
-            margin: EdgeInsets.only(left: 10, right: 10),
+            margin: EdgeInsets.only(left: 10, right: 10,bottom: MediaQuery.of(parentContext).viewInsets.bottom,),
             child: Wrap(
               children: <Widget>[
                 //title
@@ -85,7 +87,7 @@ class Organization extends StatelessWidget {
 
                 //name
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(10),
                   child: TextFormField(
                     autofocus: true,
                     cursorColor: Colors.redAccent,
@@ -160,15 +162,46 @@ class Organization extends StatelessWidget {
           //iterating through document snapshots (like a for loop)
           builder: (_, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: Padding(
-                  padding: EdgeInsets.all(50),
-                  child: LinearProgressIndicator(
-                    backgroundColor: Colors.redAccent,
+              return Align(
+                alignment: Alignment.center,
+                child: Container(
+                  height: 200,
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.0),
+                    ),
+                    elevation: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Text('Organizations',style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
+                        Padding(padding: EdgeInsets.only(bottom :10,left: 150,right: 150)),
+                        CircularProgressIndicator(
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
-            } else {
+            }
+            else if(snapshot.data.length == 0){
+              return Align(
+                alignment: Alignment.center,
+                child: Container(
+                  height: 250,
+                  width: 250,
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Image.asset(
+                        'assets/emptyBox.gif'
+                    ),
+                  ),
+                ),
+              );
+            }
+            else {
               //building a list view items through iteration
               return ListView.builder(
                   itemCount: snapshot.data.length,

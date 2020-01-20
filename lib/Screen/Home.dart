@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:bachelor/Components.dart';
+import 'package:bachelor/Screen/MyHosts.dart';
 import 'package:bachelor/Screen/Options/CreateHost.dart';
 import 'package:bachelor/Screen/Options/Host.dart';
 import 'package:bachelor/Screen/Options/Organization.dart';
@@ -27,7 +28,7 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
   Widget _homeState;
 
   //widget conditions
-  bool _menuState = false, upDirection;
+  bool _menuState = false, upDirection,_gesture = true;
 
   //host details from fireBase
   String  _hostName,_hostNumber;
@@ -89,7 +90,7 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
 
     //menuBar Controller
     _menuBarController = AnimationController(
-      duration: Duration(milliseconds: 1000),
+      duration: Duration(milliseconds: 500),
       vsync: this
     );
 
@@ -194,29 +195,60 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       key: _scaffoldKey,
       backgroundColor: Colors.white,
-      body: Stack(
-        children: <Widget>[
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onDoubleTap: (){
+          setState(() {
+            _gesture = false;
+            print('Double Tap');
+            log('Home: MyHosts Loaded');
+            _homeState = MyHosts(_scrollController,_scaffoldKey,parentContext);
+          });
+        },
+        onHorizontalDragUpdate: (details){
+          if(details.primaryDelta >0 && !_gesture){
+            setState(() {
+              _gesture = !_gesture;
+              print('Dragged Left');
+              log('Home: Hosts reloaded');
+              pullData();
+              _homeState = Host(_scrollController,_scaffoldKey);
+            });
+          }
+          else if(details.primaryDelta <0 && _gesture){
+            setState(() {
+              _gesture = !_gesture;
+              print('Dragged Right');
+              pullData();
+              log('Home: Organization reloaded');
+              _homeState = Organization(_scaffoldKey,parentContext);
+            });
+          }
+        },
+        child: Stack(
+          children: <Widget>[
 
-          ///body
-          Container(
-            margin: EdgeInsets.only(top: 60),
-            color: Colors.white,
-            child: _homeState,
-          ),
+            ///body
+            Container(
+              margin: EdgeInsets.only(top: 60),
+              color: Colors.white,
+              child: _homeState,
+            ),
 
-          ///Menu Bar
-          mainMenuBar(),
+            ///Menu Bar
+            mainMenuBar(),
 
-          ///App Bar
-          mainAppBar(),
+            ///App Bar
+            mainAppBar(),
 
-          ///Bottom App Bar
-          bottomAppBar(),
+            ///Bottom App Bar
+            bottomAppBar(),
 
-          ///Floating Action Button
-          hostActionButton(),
+            ///Floating Action Button
+            hostActionButton(),
 
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -477,7 +509,14 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
 
                 //MyHosts
                 ListTile(
-                  onTap: (){},
+                  onTap: (){
+                    setState(() {
+                      _menuBarController.reverse();
+                      _menuState = !_menuState;
+                      _homeState = MyHosts(_scrollController,_scaffoldKey,parentContext);
+                      Navigator.of(context).pop();
+                    });
+                  },
                   onLongPress: (){},
                   title: Text('My Hosts',style: TextStyle(fontWeight: FontWeight.bold,color: Colors.redAccent),),
                   leading: Icon(Icons.location_on,color: Colors.redAccent,),
