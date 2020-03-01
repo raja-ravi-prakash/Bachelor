@@ -1,6 +1,6 @@
 # bachelor
 
-A new Flutter application.
+A Location Service application to track un-wanted or any food which is about to be wasted, and by that tracking location ,people who can get this to any orphanages can access those locations and make them usefull to people who are in need, and even by this we can even directly contact any organizations which collect and preserve waste food and serve them to poor (internal registration is required).
 
 ## Getting Started
 
